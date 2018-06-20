@@ -2,6 +2,7 @@ import collection.crawler as cw
 import pandas as pd
 import urllib
 import xml.etree.ElementTree as et
+from urllib.request import Request, urlopen
 from bs4 import BeautifulSoup
 from itertools import count
 from collection.data_dict import sido_dict, gungu_dict
@@ -22,12 +23,11 @@ RESULT_DIRECTORY = '__result__/crawling'
 
 def crawling_pelicana():
     results = []
-    for page in count(start=1):    # range(1, 3)
+    for page in count(start=1):   # range(1, 2)
         url = 'http://pelicana.co.kr/store/stroe_search.html?branch_name=&gu=&si=&page=%d' % page
         html = cw.crawling(url=url)
 
         bs = BeautifulSoup(html, 'html.parser')
-
         tag_table = bs.find('table', attrs={'class': 'table mt20'})
         tag_table = tag_table.find('tbody')
         tags_tr = tag_table.findAll('tr')
@@ -72,6 +72,39 @@ def proc_nene(xml):
     return results
 
 
+def crawling_kyochon():
+    results=[]
+    for sido1 in range(1, 18): # range(1, 18)
+        for sido2 in count(start=1): # count(start=1)range(23, 27)
+            url='http://www.kyochon.com/shop/domestic.asp?sido1=%s&sido2=%s&txtsearch=' % (sido1, sido2)
+            html = cw.crawling(url=url)
+            if html == None:
+                break
+            else:
+                bs = BeautifulSoup(html, 'html.parser')
+
+            # < ulclass ="list" >
+            tags_table = bs.find('ul', attrs={'class':'list'})
+            tags_dl = tags_table.findAll('dl')
+
+            for tag_tr in tags_dl:
+                strings = list(tag_tr.strings)
+                if '검색결과가 없습니다.' not in strings:
+                    name = strings[1]
+                    address = strings[3].replace('\t','').replace('\r','').replace('\n','')
+                    sidogu = address.split()[:2]
+
+                results.append((name, address) + tuple(sidogu))
+
+    table = pd.DataFrame(results, columns=['name', 'address', 'sido', 'gungu'])
+    table.to_csv('{0}/kyochon_table.csv'.format(RESULT_DIRECTORY),
+                 encoding='utf-8',
+                 mode='w',
+                 index=True)
+
+    table['sido'] = table.sido.apply(lambda v: sido_dict.get(v, v))
+    table['gungu'] = table.gungu.apply(lambda v: gungu_dict.get(v, v))
+
 
 def store_nene(data):
     table = pd.DataFrame(data, columns=['name', 'address', 'sido', 'gungu'])
@@ -84,12 +117,15 @@ def store_nene(data):
     table['gungu'] = table.gungu.apply(lambda v: gungu_dict.get(v, v))
 
 if __name__ == '__main__':
-    # pelicana
-    crawling_pelicana()
+    # # pelicana
+    # crawling_pelicana()
+    #
+    # # nene
+    # cw.crawling(
+    #     url='http://nenechicken.com/subpage/where_list.asp?target_step2=%s&proc_type=step1&target_step1=%s '
+    #         % (urllib.parse.quote('전체'), urllib.parse.quote('전체')),
+    #     proc=proc_nene,
+    #     store=store_nene)
 
-    # nene
-    cw.crawling(
-        url='http://nenechicken.com/subpage/where_list.asp?target_step2=%s&proc_type=step1&target_step1=%s '
-            % (urllib.parse.quote('전체'), urllib.parse.quote('전체')),
-        proc=proc_nene,
-        store=store_nene)
+    # kyochon
+    crawling_kyochon()
