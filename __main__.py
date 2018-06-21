@@ -1,8 +1,8 @@
 import collection.crawler as cw
 import pandas as pd
-import urllib
 import xml.etree.ElementTree as et
-from urllib.request import Request, urlopen
+import  time
+from selenium import webdriver
 from bs4 import BeautifulSoup
 from itertools import count
 from collection.data_dict import sido_dict, gungu_dict
@@ -93,8 +93,7 @@ def crawling_kyochon():
                     name = strings[1]
                     address = strings[3].replace('\t','').replace('\r','').replace('\n','')
                     sidogu = address.split()[:2]
-
-                results.append((name, address) + tuple(sidogu))
+                    results.append((name, address) + tuple(sidogu))
 
     table = pd.DataFrame(results, columns=['name', 'address', 'sido', 'gungu'])
     table.to_csv('{0}/kyochon_table.csv'.format(RESULT_DIRECTORY),
@@ -106,6 +105,36 @@ def crawling_kyochon():
     table['gungu'] = table.gungu.apply(lambda v: gungu_dict.get(v, v))
 
 
+def crawling_goobne():
+    url='http://www.goobne.co.kr/store/search_store.jsp'
+
+    # 첫페이지 로딩
+    wd = webdriver.Chrome('D:/pycharmProject/chromedriver.exe')
+    wd.get(url)
+    time.sleep(5)
+    # print(wd.page_source)
+
+    for page in range(101, 104):
+        # 자바 스크립트 실행
+        script ='store.getList(%d)' % page
+        wd.execute_script(script)
+        time.sleep(5)
+
+        # 실행 결과 HTML(rendering) 받아오기
+        html = wd.page_source
+
+        bs = BeautifulSoup(html, 'html.parser')
+        tag_tbody = bs.find('tbody', attrs={'id':'store_list'})
+        tags_tr = tag_tbody.findAll('tr')
+
+        # 끝 검출
+        if tags_tr[0].get('class') is None:
+            break
+
+        print(tags_tr)
+
+
+
 def store_nene(data):
     table = pd.DataFrame(data, columns=['name', 'address', 'sido', 'gungu'])
     table.to_csv('{0}/nene_table.csv'.format(RESULT_DIRECTORY),
@@ -115,6 +144,7 @@ def store_nene(data):
 
     table['sido'] = table.sido.apply(lambda v: sido_dict.get(v, v))
     table['gungu'] = table.gungu.apply(lambda v: gungu_dict.get(v, v))
+
 
 if __name__ == '__main__':
     # # pelicana
@@ -128,4 +158,6 @@ if __name__ == '__main__':
     #     store=store_nene)
 
     # kyochon
-    crawling_kyochon()
+    # crawling_kyochon()
+
+    crawling_goobne()
