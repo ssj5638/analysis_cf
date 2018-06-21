@@ -1,7 +1,9 @@
 import collection.crawler as cw
 import pandas as pd
 import xml.etree.ElementTree as et
-import  time
+import time
+import urllib
+from datetime import datetime
 from selenium import webdriver
 from bs4 import BeautifulSoup
 from itertools import count
@@ -48,13 +50,14 @@ def crawling_pelicana():
 
     #store
     table = pd.DataFrame(results, columns=['name', 'address', 'sido', 'gungu'])
+
+    table['sido'] = table.sido.apply(lambda v: sido_dict.get(v, v))
+    table['gungu'] = table.gungu.apply(lambda v: gungu_dict.get(v, v))
+
     table.to_csv('{0}/pelicana_table.csv'.format(RESULT_DIRECTORY),
                  encoding='utf-8',
                  mode='w',
                  index=True)
-
-    table['sido'] = table.sido.apply(lambda v: sido_dict.get(v, v))
-    table['gungu'] = table.gungu.apply(lambda v: gungu_dict.get(v, v))
 
 
 def proc_nene(xml):
@@ -96,13 +99,14 @@ def crawling_kyochon():
                     results.append((name, address) + tuple(sidogu))
 
     table = pd.DataFrame(results, columns=['name', 'address', 'sido', 'gungu'])
+
+    table['sido'] = table.sido.apply(lambda v: sido_dict.get(v, v))
+    table['gungu'] = table.gungu.apply(lambda v: gungu_dict.get(v, v))
+
     table.to_csv('{0}/kyochon_table.csv'.format(RESULT_DIRECTORY),
                  encoding='utf-8',
                  mode='w',
                  index=True)
-
-    table['sido'] = table.sido.apply(lambda v: sido_dict.get(v, v))
-    table['gungu'] = table.gungu.apply(lambda v: gungu_dict.get(v, v))
 
 
 def crawling_goobne():
@@ -113,11 +117,12 @@ def crawling_goobne():
     wd.get(url)
     time.sleep(5)
     # print(wd.page_source)
-
-    for page in range(101, 104):
+    results = []
+    for page in count(start=1):
         # 자바 스크립트 실행
         script ='store.getList(%d)' % page
         wd.execute_script(script)
+        print('%s : success for script [%s]' % (datetime.now(), script))
         time.sleep(5)
 
         # 실행 결과 HTML(rendering) 받아오기
@@ -131,33 +136,48 @@ def crawling_goobne():
         if tags_tr[0].get('class') is None:
             break
 
-        print(tags_tr)
+        for tag_tr in tags_tr:
+            strings = list(tag_tr.strings)
+            name = strings[1]
+            address = strings[6]
+            sidogu = address.split()[:2]
+            results.append((name, address) + tuple(sidogu))
+            # name, address는 str/ sidogu는 list형이었음
+    # store
+    table = pd.DataFrame(results, columns={'name', 'address', 'sido', 'gungu'})
+    table['sido'] = table.sido.apply(lambda v : sido_dict.get(v))
+    table['gungu'] = table.gungu.apply(lambda v : gungu_dict.get(v))
 
+    table.to_csv('{0}/goobne_table.csv'.format(RESULT_DIRECTORY),
+                 encoding='utf-8',
+                 mode='w',
+                 index=True)
 
 
 def store_nene(data):
     table = pd.DataFrame(data, columns=['name', 'address', 'sido', 'gungu'])
+
+    table['sido'] = table.sido.apply(lambda v: sido_dict.get(v, v))
+    table['gungu'] = table.gungu.apply(lambda v: gungu_dict.get(v, v))
+
     table.to_csv('{0}/nene_table.csv'.format(RESULT_DIRECTORY),
                  encoding='utf-8',
                  mode='w',
                  index=True)
 
-    table['sido'] = table.sido.apply(lambda v: sido_dict.get(v, v))
-    table['gungu'] = table.gungu.apply(lambda v: gungu_dict.get(v, v))
-
 
 if __name__ == '__main__':
     # # pelicana
-    # crawling_pelicana()
+    crawling_pelicana()
     #
     # # nene
-    # cw.crawling(
-    #     url='http://nenechicken.com/subpage/where_list.asp?target_step2=%s&proc_type=step1&target_step1=%s '
-    #         % (urllib.parse.quote('전체'), urllib.parse.quote('전체')),
-    #     proc=proc_nene,
-    #     store=store_nene)
+    cw.crawling(
+        url='http://nenechicken.com/subpage/where_list.asp?target_step2=%s&proc_type=step1&target_step1=%s '
+            % (urllib.parse.quote('전체'), urllib.parse.quote('전체')),
+        proc=proc_nene,
+        store=store_nene)
 
     # kyochon
-    # crawling_kyochon()
+    crawling_kyochon()
 
-    crawling_goobne()
+    # crawling_goobne()
