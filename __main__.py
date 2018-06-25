@@ -168,16 +168,16 @@ def store_nene(data):
 
 if __name__ == '__main__':
     # # pelicana
-    crawling_pelicana()
+    # crawling_pelicana()
     #
     # # nene
-    cw.crawling(
-        url='http://nenechicken.com/subpage/where_list.asp?target_step2=%s&proc_type=step1&target_step1=%s '
-            % (urllib.parse.quote('전체'), urllib.parse.quote('전체')),
-        proc=proc_nene,
-        store=store_nene)
-
-    # kyochon
-    crawling_kyochon()
+    # cw.crawling(
+    #     url='http://nenechicken.com/subpage/where_list.asp?target_step2=%s&proc_type=step1&target_step1=%s '
+    #         % (urllib.parse.quote('전체'), urllib.parse.quote('전체')),
+    #     proc=proc_nene,
+    #     store=store_nene)
+    #
+    # # kyochon
+    # crawling_kyochon()
 
     # crawling_goobne()
