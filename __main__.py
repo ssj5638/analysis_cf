@@ -145,8 +145,8 @@ def crawling_goobne():
             # name, address는 str/ sidogu는 list형이었음
     # store
     table = pd.DataFrame(results, columns={'name', 'address', 'sido', 'gungu'})
-    table['sido'] = table.sido.apply(lambda v : sido_dict.get(v))
-    table['gungu'] = table.gungu.apply(lambda v : gungu_dict.get(v))
+    table['sido'] = table.sido.apply(lambda v : sido_dict.get(v, v))
+    table['gungu'] = table.gungu.apply(lambda v : gungu_dict.get(v, v))
 
     table.to_csv('{0}/goobne_table.csv'.format(RESULT_DIRECTORY),
                  encoding='utf-8',
@@ -180,4 +180,4 @@ if __name__ == '__main__':
     # # kyochon
     # crawling_kyochon()
 
-    # crawling_goobne()
+    crawling_goobne()
